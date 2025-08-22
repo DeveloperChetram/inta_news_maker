@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>News Template Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg: #0c0f22;
+      --panel: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.10);
+      --text: #eef2ff;
+      --muted: #a7b0c7;
+      --brand: #ff3040;
+      --btn: #1a2149;
+      --btnHover: #243169;
+      --chip: #1f2444;
+      --chipBorder: #2b3260;
+      --shadow: 0 10px 30px rgba(0,0,0,0.45);
+    }
+    *{ box-sizing: border-box }
+    html, body { height: 100% }
+    body{
+      margin: 0;
+      color: var(--text);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1200px 700px at 20% -10%, #1b2157 0%, #0e122d 60%, #090b1a 100%);
+      background-attachment: fixed;
+    }
+
+    .app { max-width: 1100px; margin: 14px auto 64px; padding: 0 12px; }
+
+    header{ display:flex; gap:10px; align-items:center; margin-bottom:12px; }
+    header .badge{ width:38px; height:38px; border-radius:10px; background: linear-gradient(135deg,#ff6a75,#ff3040); display:grid; place-items:center; box-shadow: var(--shadow); }
+    header h1{ margin:0; font-size: 1.1rem; }
+    header p{ margin:4px 0 0; font-size:.9rem; color: var(--muted) }
+
+    /* Mobile-first: single column, tools first */
+    .grid{ display:grid; gap: 12px; grid-template-columns: 1fr; }
+    aside.panel.controls{ order: 0; }
+    main.panel.preview{ order: 1; }
+    
+    /* Desktop: two columns */
+    @media (min-width: 980px){
+      .grid{ grid-template-columns: 360px 1fr; align-items: start; }
+    }
+
+    .panel{
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    .controls{ padding: 12px; }
+    @media (min-width: 980px){
+      .controls{ position: sticky; top: 10px; }
+    }
+    
+    .group{
+      background: rgba(0,0,0,.16);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .group h3{
+      margin: 0 0 10px;
+      font-size: .95rem;
+      font-family: Poppins, Inter, sans-serif;
+      letter-spacing: .2px;
+    }
+
+    label{ display:block; font-size:.85rem; color: var(--muted); margin-bottom:6px; }
+    input[type="text"], textarea, select, input[type="number"]{
+      width:100%; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,.12);
+      background: rgba(10,12,28,.6); color: var(--text); outline:none; font-size:.95rem;
+    }
+    textarea{ min-height: 92px; resize: vertical; }
+    input[type="file"]{ width:100%; }
+    input[type="color"]{ width:44px; height:36px; padding:0; border-radius:10px; border:1px solid rgba(255,255,255,.2); background: transparent; }
+    input[type="range"]{ width:100%; accent-color:#3b82f6; }
+
+    .row{ display:flex; gap:8px; flex-wrap: wrap; }
+    .split{ display:grid; grid-template-columns: 1fr 1fr; gap:8px; }
+
+    .btn{
+      border:1px solid rgba(255,255,255,.1); background: var(--btn); color:#fff; font-weight:700;
+      padding:10px 14px; border-radius:10px; cursor:pointer; transition: background .15s, transform .05s;
+    }
+    .btn:hover{ background: var(--btnHover) }
+    .btn:active{ transform: translateY(1px) }
+    .btn.primary{ background: linear-gradient(180deg,#2a3aa0,#1b2358) }
+
+    .chip-list{ display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+    .chip{ 
+      display:inline-flex; align-items:center; gap:8px; 
+      padding:6px 10px; border-radius:999px; 
+      background: var(--chip); border:1px solid var(--chipBorder); 
+      font-size:.88rem; line-height:1; height: 32px;
+    }
+    .chip .dot{ width:10px; height:10px; border-radius:50%; box-shadow: 0 0 0 2px rgba(0,0,0,.25) inset; }
+    .chip .x{ width:22px; height:22px; display:grid; place-items:center; border-radius:50%; background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); cursor:pointer; }
+
+    .preview{ padding: 10px; }
+    .canvas-wrap{ position:relative; width:100%; border-radius:14px; overflow:hidden; border:1px solid var(--border); background:#0b0d1a; box-shadow: var(--shadow); }
+    canvas{ width:100%; height:auto; display:block; }
+
+    .toolbar{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+    .note{ color: var(--muted); font-size:.85rem; margin-top:8px; }
+
+    .switch{ display:inline-flex; align-items:center; gap:8px; cursor:pointer; user-select:none; }
+    .switch input{ display:none; }
+    .toggle{
+      width:40px; height:24px; border-radius:999px; background:#2a2f55; border:1px solid rgba(255,255,255,.15); position:relative;
+    }
+    .toggle::after{
+      content:""; position:absolute; width:18px; height:18px; border-radius:50%; left:3px; top:50%; transform: translateY(-50%); background: #fff; transition: transform .2s, background .2s;
+    }
+    .switch input:checked + .toggle{ background: linear-gradient(180deg, #34d399, #0ea5e9); }
+    .switch input:checked + .toggle::after{ transform: translate(16px,-50%); background:#0b102e; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="badge">📰</div>
+      <div>
+        <h1>News Template Generator</h1>
+        <p>Mobile‑first tool to create a shareable news graphic like your example.</p>
+      </div>
+    </header>
+
+    <div class="grid">
+      <aside class="panel controls">
+        <div class="group">
+          <h3>Background</h3>
+          <label for="bgFile">Upload background image</label>
+          <input id="bgFile" type="file" accept="image/*" />
+          <div class="note">Tip: Use a high‑resolution image for crisp exports.</div>
+        </div>
+
+        <div class="group">
+          <h3>News Tag</h3>
+          <div class="row">
+            <div style="flex:1; min-width:180px">
+              <label for="tagText">Tag text</label>
+              <input id="tagText" type="text" placeholder="e.g. Breaking News" value="Breaking News" />
+            </div>
+            <div>
+              <label for="tagBg">Tag color</label>
+              <input id="tagBg" type="color" value="#ff3040" />
+            </div>
+            <div>
+              <label for="tagFg">Text color</label>
+              <input id="tagFg" type="color" value="#ffffff" />
+            </div>
+          </div>
+        </div>
+
+        <div class="group">
+          <h3>Headline</h3>
+          <label for="headline">News text</label>
+          <textarea id="headline" placeholder="Type your news...">From 2030 onwards, great company will be a permanent remote organization.</textarea>
+          <div class="row" style="margin-top:8px">
+            <div style="min-width:160px; flex:1">
+              <label for="fontSize">Font size</label>
+              <input id="fontSize" type="range" min="36" max="140" step="1" value="86" />
+            </div>
+            <div style="min-width:160px">
+              <label for="lineHeight">Line height</label>
+              <input id="lineHeight" type="range" min="1.0" max="1.6" step="0.02" value="1.16" />
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label for="headlineColor">Text color</label>
+              <input id="headlineColor" type="color" value="#ffffff" />
+            </div>
+            <div style="min-width:160px">
+              <label for="align">Alignment</label>
+              <select id="align">
+                <option value="left" selected>Left</option>
+                <option value="center">Center</option>
+              </select>
+            </div>
+            <label class="switch" title="Uppercase headline">
+              <input id="uppercase" type="checkbox" />
+              <span class="toggle"></span>
+              <span style="color:#aab3ca; font-size:.9rem">Uppercase</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="group">
+          <h3>Categories</h3>
+          <div class="row">
+            <div style="flex:1; min-width:160px">
+              <label for="catText">Category label</label>
+              <input id="catText" type="text" placeholder="e.g. Economy" />
+            </div>
+            <div>
+              <label for="catBg">Color</label>
+              <input id="catBg" type="color" value="#10b981" />
+            </div>
+            <button id="addCat" class="btn" style="align-self:flex-end">Add</button>
+          </div>
+          <div id="catList" class="chip-list"></div>
+          <div class="note">Add multiple categories; they'll wrap automatically.</div>
+        </div>
+
+        <div class="group">
+          <h3>Branding & Style</h3>
+          <div class="row">
+            <label class="switch" title="Show logo">
+              <input id="showLogo" type="checkbox" checked />
+              <span class="toggle"></span>
+              <span style="color:#aab3ca; font-size:.9rem">Show logo</span>
+            </label>
+            <div style="flex:1; min-width:160px">
+              <label for="logoScale">Logo size</label>
+              <input id="logoScale" type="range" min="0.06" max="0.22" step="0.01" value="0.14" />
+            </div>
+          </div>
+          <div class="split" style="margin-top:8px">
+            <div>
+              <label for="overlay">Overlay strength</label>
+              <input id="overlay" type="range" min="0" max="90" step="1" value="52" />
+            </div>
+            <div>
+              <label for="padding">Content padding</label>
+              <input id="padding" type="range" min="36" max="120" step="2" value="64" />
+            </div>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <label class="switch" title="Show decorative dots">
+              <input id="showDecor" type="checkbox" checked />
+              <span class="toggle"></span>
+              <span style="color:#aab3ca; font-size:.9rem">Show dots</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="group">
+          <h3>Output</h3>
+          <div class="row">
+            <div style="flex:1; min-width:160px">
+              <label for="size">Size</label>
+              <select id="size">
+                <option value="1080x1080" selected>Square 1080 x 1080</option>
+                <option value="1080x1350">Portrait 1080 x 1350</option>
+                <option value="1920x1080">Landscape 1920 x 1080</option>
+              </select>
+            </div>
+            <div style="min-width:160px">
+              <label for="quality">JPG quality</label>
+              <input id="quality" type="range" min="0.6" max="1" step="0.01" value="0.96" />
+            </div>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <button id="download" class="btn primary">Download JPG</button>
+          <button id="clearBg" class="btn">Clear background</button>
+          <button id="reset" class="btn">Reset</button>
+        </div>
+        <div class="note">Logo is loaded from your URL and composited into the exported image.</div>
+      </aside>
+
+      <main class="panel preview">
+        <div class="canvas-wrap">
+          <canvas id="canvas" aria-label="News preview canvas"></canvas>
+        </div>
+        <div class="note">On desktop, you can also drag & drop an image onto the page to set the background.</div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      logoUrl: "https://ik.imagekit.io/chetram/WhatsApp%20Image%202025-08-22%20at%2007.34.55_9ce374d7.jpg",
+      showLogo: true,
+      logoScale: 0.14,
+      tagText: "Breaking News",
+      tagBg: "#ff3040",
+      tagFg: "#ffffff",
+      headline: "From 2030 onwards, great company will be a permanent remote organization.",
+      fontSize: 86,
+      lineHeight: 1.16,
+      headlineColor: "#ffffff",
+      align: "left",
+      uppercase: false,
+      categories: [
+        { text: "Economy", color: "#10b981" },
+        { text: "Business", color: "#8b5cf6" }
+      ],
+      bgImage: null,
+      overlay: 52,
+      padding: 64,
+      showDecor: true,
+      outW: 1080,
+      outH: 1080,
+      quality: 0.96
+    };
+
+    const el = {
+      canvas: document.getElementById("canvas"),
+      bgFile: document.getElementById("bgFile"),
+      tagText: document.getElementById("tagText"),
+      tagBg: document.getElementById("tagBg"),
+      tagFg: document.getElementById("tagFg"),
+      headline: document.getElementById("headline"),
+      fontSize: document.getElementById("fontSize"),
+      lineHeight: document.getElementById("lineHeight"),
+      headlineColor: document.getElementById("headlineColor"),
+      align: document.getElementById("align"),
+      uppercase: document.getElementById("uppercase"),
+      catText: document.getElementById("catText"),
+      catBg: document.getElementById("catBg"),
+      addCat: document.getElementById("addCat"),
+      catList: document.getElementById("catList"),
+      overlay: document.getElementById("overlay"),
+      padding: document.getElementById("padding"),
+      showDecor: document.getElementById("showDecor"),
+      size: document.getElementById("size"),
+      quality: document.getElementById("quality"),
+      download: document.getElementById("download"),
+      clearBg: document.getElementById("clearBg"),
+      reset: document.getElementById("reset"),
+      showLogo: document.getElementById("showLogo"),
+      logoScale: document.getElementById("logoScale"),
+    };
+
+    const logoImg = new Image();
+    logoImg.crossOrigin = "anonymous";
+    logoImg.src = state.logoUrl;
+
+    function parseSize(str){
+      const [w,h] = str.split("x").map(n=>parseInt(n,10));
+      return {w,h};
+    }
+
+    function fitCover(srcW, srcH, dstW, dstH){
+      const s = Math.max(dstW/srcW, dstH/srcH);
+      return {
+        dx: (dstW - srcW*s)/2,
+        dy: (dstH - srcH*s)/2,
+        dw: srcW*s,
+        dh: srcH*s
+      };
+    }
+
+    function roundedRect(ctx, x, y, w, h, r){
+      const rr = Math.min(r, w/2, h/2);
+      ctx.beginPath();
+      ctx.moveTo(x+rr, y);
+      ctx.arcTo(x+w, y, x+w, y+h, rr);
+      ctx.arcTo(x+w, y+h, x, y+h, rr);
+      ctx.arcTo(x, y+h, x, y, rr);
+      ctx.arcTo(x, y, x+w, y, rr);
+      ctx.closePath();
+    }
+
+    function wrapText(ctx, text, maxWidth, font, lineHeightPx){
+      ctx.font = font;
+      const words = (text || "").split(/\s+/);
+      const lines = [];
+      let line = "";
+      for (let i=0;i<words.length;i++){
+        const test = line ? line + " " + words[i] : words[i];
+        if(ctx.measureText(test).width > maxWidth && line){
+          lines.push(line);
+          line = words[i];
+        } else {
+          line = test;
+        }
+      }
+      if(line) lines.push(line);
+      const fixed = [];
+      for(const l of lines){
+        if(ctx.measureText(l).width <= maxWidth){ fixed.push(l); continue; }
+        let acc = "";
+        for(const ch of l){
+          const t = acc + ch;
+          if(ctx.measureText(t).width > maxWidth && acc){
+            fixed.push(acc); acc = ch;
+          } else acc = t;
+        }
+        if(acc) fixed.push(acc);
+      }
+      return { lines: fixed, height: fixed.length * lineHeightPx };
+    }
+
+    function measureChips(ctx, chips, maxWidth, font, padX, padY, gap){
+      ctx.font = font;
+      let cx = 0, lineH = 32, totalH = 0, started = false;
+      for(const chip of chips){
+        const textW = ctx.measureText(chip.text || "").width;
+        const w = textW + padX*2;
+        if(!started){ started = true; }
+        if(cx + w > maxWidth){
+          totalH += lineH + gap;
+          cx = 0;
+        }
+        cx += w + gap;
+      }
+      if(started) totalH += lineH;
+      return totalH;
+    }
+
+    function drawChipsFlow(ctx, chips, x, y, maxWidth, gap, padX, padY, radius, font){
+      let cx = x, cy = y, lineH = 32;
+      ctx.font = font;
+      ctx.textBaseline = "middle";
+      for(const chip of chips){
+        const text = chip.text || "";
+        const textW = ctx.measureText(text).width;
+        const w = textW + padX*2;
+        const h = 32;
+        if(cx + w > x + maxWidth){
+          cx = x; cy += lineH + gap;
+        }
+        ctx.fillStyle = chip.color || "#444";
+        roundedRect(ctx, cx, cy, w, h, radius);
+        ctx.fill();
+        ctx.fillStyle = "#fff";
+        ctx.fillText(text, cx + padX, cy + h/2);
+        cx += w + gap;
+      }
+      return { height: (cy - y) + lineH };
+    }
+
+    function drawPlaceholderBG(ctx, w, h){
+      const g = ctx.createLinearGradient(0,0,w,h);
+      g.addColorStop(0, "#0e1338");
+      g.addColorStop(1, "#101322");
+      ctx.fillStyle = g;
+      ctx.fillRect(0,0,w,h);
+      const density = Math.floor(w*h/8000);
+      ctx.globalAlpha = 0.05;
+      ctx.fillStyle = "#fff";
+      for(let i=0;i<density;i++){
+        ctx.fillRect(Math.random()*w, Math.random()*h, 1, 1);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+  function renderTo(canvas){
+  const ctx = canvas.getContext("2d");
+  
+  // CRITICAL FIX: Always reset transform first to prevent compounding
+  ctx.resetTransform();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const W = state.outW, H = state.outH;
+  
+  // Calculate scale based on canvas dimensions vs logical dimensions
+  const scaleX = canvas.width / W;
+  const scaleY = canvas.height / H;
+  const scale = Math.min(scaleX, scaleY);
+  
+  // Apply transform only once per render
+  ctx.scale(scale, scale);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+
+  // Background
+  if(state.bgImage?.complete){
+    const fit = fitCover(state.bgImage.naturalWidth || state.bgImage.width, state.bgImage.naturalHeight || state.bgImage.height, W, H);
+    ctx.drawImage(state.bgImage, fit.dx, fit.dy, fit.dw, fit.dh);
+  } else {
+    drawPlaceholderBG(ctx, W, H);
+  }
+
+  // Rest of the rendering code remains the same...
+  const ol = Math.max(0, Math.min(90, +state.overlay))/100;
+  if(ol > 0){
+    const g = ctx.createLinearGradient(0, H, 0, 0);
+    g.addColorStop(0, `rgba(0,0,0,${0.68 + ol*0.32})`);
+    g.addColorStop(0.55, `rgba(0,0,0,${0.25 * ol})`);
+    g.addColorStop(1, `rgba(0,0,0,${0.16 * ol})`);
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,W,H);
+  }
+
+  const P = +state.padding;
+  let yCursor = P;
+
+  let logoH = 0;
+  if(state.showLogo && logoImg?.complete){
+    const ratio = (logoImg.naturalWidth || 1) / (logoImg.naturalHeight || 1);
+    const lw = Math.max(64, Math.min(W * state.logoScale, W * 0.34));
+    const lh = lw / ratio;
+    ctx.save();
+    ctx.globalAlpha = 0.12;
+    roundedRect(ctx, P-8, yCursor-8, lw+16, lh+16, 12);
+    ctx.fillStyle = "#000";
+    ctx.fill();
+    ctx.restore();
+    ctx.drawImage(logoImg, P, yCursor, lw, lh);
+    logoH = lh;
+    yCursor += lh + 18;
+  }
+
+  const tagFontSize = Math.max(18, Math.min(42, Math.round(W * 0.035)));
+  const tagFont = `700 ${tagFontSize}px Poppins, Inter, sans-serif`;
+  ctx.font = tagFont;
+  ctx.textBaseline = "middle";
+  const padX = Math.max(14, Math.round(tagFontSize*0.55));
+  const padY = Math.max(8, Math.round(tagFontSize*0.34));
+  const tagTextW = ctx.measureText(state.tagText).width;
+  const tagW = tagTextW + padX*2;
+  const tagH = padY*2 + tagFontSize*0.82;
+  roundedRect(ctx, P, yCursor, tagW, tagH, Math.min(18, tagH/2));
+  ctx.fillStyle = state.tagBg;
+  ctx.fill();
+  ctx.fillStyle = state.tagFg;
+  ctx.fillText(state.tagText, P + padX, yCursor + tagH/2);
+
+  const topBound = yCursor + tagH + 22;
+  const cats = state.categories || [];
+  const catFontSize = Math.max(18, Math.min(30, Math.round(W * 0.022)));
+  const catFont = `700 ${catFontSize}px Inter, system-ui, sans-serif`;
+  const catPadX = Math.max(12, Math.round(catFontSize*0.6));
+  const catPadY = Math.max(6, Math.round(catFontSize*0.35));
+  const catGap = 8;
+  const maxTextW = W - P*2;
+
+  const catsH = measureChips(ctx, cats, maxTextW, catFont, catPadX, catPadY, catGap);
+  const catsTop = H - P - catsH;
+
+  let text = state.uppercase ? state.headline.toUpperCase() : state.headline;
+  let fs = +state.fontSize;
+  let lh = +state.lineHeight;
+  let font = `900 ${fs}px Poppins, Inter, sans-serif`;
+  ctx.font = font;
+
+  const lineHeightPx = fs * lh;
+  let wrapped = wrapText(ctx, text, maxTextW, font, lineHeightPx);
+  let needed = wrapped.lines.length * lineHeightPx;
+  const available = Math.max(60, (catsTop - 16) - topBound);
+
+  if(needed > available){
+    const scaleDown = Math.max(0.55, Math.min(1, available / needed));
+    fs = Math.max(28, Math.floor(fs * scaleDown));
+    font = `900 ${fs}px Poppins, Inter, sans-serif`;
+    const lhAdj = Math.max(1.06, Math.min(1.6, lh * (1/scaleDown) * 0.94));
+    lh = lhAdj;
+    const lineH2 = fs * lh;
+    wrapped = wrapText(ctx, text, maxTextW, font, lineH2);
+    needed = wrapped.lines.length * lineH2;
+  }
+
+  ctx.font = font;
+  ctx.fillStyle = state.headlineColor;
+  ctx.textAlign = state.align === "center" ? "center" : "left";
+  ctx.textBaseline = "alphabetic";
+  ctx.shadowColor = "rgba(0,0,0,0.6)";
+  ctx.shadowBlur = Math.max(6, Math.round(W*0.005));
+
+  const x = state.align === "center" ? W/2 : P;
+  const actualLineH = fs * lh;
+  const yStart = catsTop - 16 - needed + fs*0.05;
+
+  for(let i=0;i<wrapped.lines.length;i++){
+    ctx.fillText(wrapped.lines[i], x, yStart + i*actualLineH);
+  }
+
+  ctx.shadowBlur = 0;
+  ctx.font = catFont;
+  drawChipsFlow(ctx, cats, P, catsTop, maxTextW, catGap, catPadX, catPadY, 999, catFont);
+
+  if(state.showDecor){
+    const gridW = Math.min(100, Math.round(W * 0.09));
+    const gridH = Math.min(80, Math.round(H * 0.10));
+    const cols = 4, rows = 4;
+    const dotW = Math.floor(gridW / (cols*2));
+    const dotH = Math.floor(gridH / (rows*2));
+    const gapX = dotW;
+    const gapY = dotH;
+    const startX = W - P - (cols*dotW + (cols-1)*gapX);
+    const midY = yStart + needed/2 - gridH/2;
+    const startY = Math.max(P, Math.min(H - P - gridH, midY));
+    ctx.globalAlpha = 0.45;
+    ctx.fillStyle = "#ffffff";
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
+        const rx = startX + c*(dotW + gapX);
+        const ry = startY + r*(dotH + gapY);
+        roundedRect(ctx, rx, ry, dotW, dotH, 4);
+        ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+
+function resizePreviewCanvas(){
+  const c = el.canvas;
+  const bounds = c.parentElement.getBoundingClientRect();
+  const cssW = Math.max(280, Math.floor(bounds.width - 20)); // account for padding
+  const ratio = state.outH / state.outW;
+  const cssH = Math.floor(cssW * ratio);
+
+  // FIXED: Consistent DPR handling without compounding
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  
+  // Set CSS size
+  c.style.width = cssW + "px";
+  c.style.height = cssH + "px";
+  
+  // Set actual canvas bitmap size
+  c.width = cssW * dpr;
+  c.height = cssH * dpr;
+
+  renderTo(c);
+}
+
+
+    function refreshCatsUI(){
+      el.catList.innerHTML = "";
+      state.categories.forEach((cat, i)=>{
+        const div = document.createElement("div");
+        div.className = "chip";
+        div.innerHTML = `
+          <span class="dot" style="background:${cat.color}"></span>
+          <span>${cat.text}</span>
+          <span class="x" data-i="${i}" title="Remove">✕</span>
+        `;
+        el.catList.appendChild(div);
+      });
+      el.catList.querySelectorAll(".x").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const idx = +btn.getAttribute("data-i");
+          state.categories.splice(idx,1);
+          refreshCatsUI();
+          resizePreviewCanvas();
+        });
+      });
+    }
+
+    function bind(){
+      el.bgFile.addEventListener("change", e=>{
+        const file = e.target.files?.[0];
+        if(!file) return;
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = ()=>{
+          state.bgImage = img;
+          URL.revokeObjectURL(url);
+          resizePreviewCanvas();
+        };
+        img.onerror = ()=> URL.revokeObjectURL(url);
+        img.src = url;
+      });
+
+      document.addEventListener("dragover", e=> e.preventDefault());
+      document.addEventListener("drop", e=>{
+        e.preventDefault();
+        const file = e.dataTransfer.files?.[0];
+        if(file && file.type.startsWith("image/")){
+          const url = URL.createObjectURL(file);
+          const img = new Image();
+          img.onload = ()=>{
+            state.bgImage = img;
+            URL.revokeObjectURL(url);
+            resizePreviewCanvas();
+          };
+          img.src = url;
+        }
+      });
+
+      el.tagText.addEventListener("input", e=>{ state.tagText = e.target.value; resizePreviewCanvas(); });
+      el.tagBg.addEventListener("input", e=>{ state.tagBg = e.target.value; resizePreviewCanvas(); });
+      el.tagFg.addEventListener("input", e=>{ state.tagFg = e.target.value; resizePreviewCanvas(); });
+
+      el.headline.addEventListener("input", e=>{ state.headline = e.target.value; resizePreviewCanvas(); });
+      el.fontSize.addEventListener("input", e=>{ state.fontSize = +e.target.value; resizePreviewCanvas(); });
+      el.lineHeight.addEventListener("input", e=>{ state.lineHeight = +e.target.value; resizePreviewCanvas(); });
+      el.headlineColor.addEventListener("input", e=>{ state.headlineColor = e.target.value; resizePreviewCanvas(); });
+      el.align.addEventListener("change", e=>{ state.align = e.target.value; resizePreviewCanvas(); });
+      el.uppercase.addEventListener("change", e=>{ state.uppercase = e.target.checked; resizePreviewCanvas(); });
+
+      el.addCat.addEventListener("click", e=>{
+        e.preventDefault();
+        const text = (el.catText.value || "").trim();
+        if(!text) return;
+        const color = el.catBg.value || "#3b82f6";
+        state.categories.push({ text, color });
+        el.catText.value = "";
+        refreshCatsUI();
+        resizePreviewCanvas();
+      });
+
+      el.overlay.addEventListener("input", e=>{ state.overlay = +e.target.value; resizePreviewCanvas(); });
+      el.padding.addEventListener("input", e=>{ state.padding = +e.target.value; resizePreviewCanvas(); });
+      el.showDecor.addEventListener("change", e=>{ state.showDecor = e.target.checked; resizePreviewCanvas(); });
+      el.showLogo.addEventListener("change", e=>{ state.showLogo = e.target.checked; resizePreviewCanvas(); });
+      el.logoScale.addEventListener("input", e=>{ state.logoScale = +e.target.value; resizePreviewCanvas(); });
+
+      el.size.addEventListener("change", e=>{
+        const {w,h} = parseSize(e.target.value);
+        state.outW = w; state.outH = h;
+        resizePreviewCanvas();
+      });
+      el.quality.addEventListener("input", e=>{ state.quality = +e.target.value; });
+
+      el.download.addEventListener("click", downloadJPG);
+      el.clearBg.addEventListener("click", ()=>{
+        state.bgImage = null;
+        el.bgFile.value = "";
+        resizePreviewCanvas();
+      });
+      el.reset.addEventListener("click", ()=>{
+        state.showLogo = true; el.showLogo.checked = true; state.logoScale = 0.14; el.logoScale.value = "0.14";
+        state.tagText = "Breaking News"; el.tagText.value = state.tagText; state.tagBg = "#ff3040"; el.tagBg.value = "#ff3040"; state.tagFg = "#ffffff"; el.tagFg.value = "#ffffff";
+        state.headline = "From 2030 onwards, great company will be a permanent remote organization."; el.headline.value = state.headline;
+        state.fontSize = 86; el.fontSize.value = "86"; state.lineHeight = 1.16; el.lineHeight.value = "1.16";
+        state.headlineColor = "#ffffff"; el.headlineColor.value = "#ffffff"; state.align = "left"; el.align.value = "left"; state.uppercase = false; el.uppercase.checked = false;
+        state.categories = [{text:"Economy", color:"#10b981"}, {text:"Business", color:"#8b5cf6"}]; refreshCatsUI();
+        state.overlay = 52; el.overlay.value = "52"; state.padding = 64; el.padding.value = "64"; state.showDecor = true; el.showDecor.checked = true;
+        state.outW = 1080; state.outH = 1080; el.size.value = "1080x1080"; state.quality = 0.96; el.quality.value = "0.96";
+        state.bgImage = null; el.bgFile.value = "";
+        resizePreviewCanvas();
+      });
+
+      window.addEventListener("resize", resizePreviewCanvas);
+      window.addEventListener("orientationchange", ()=> setTimeout(resizePreviewCanvas, 200));
+    }
+
+    function downloadJPG(){
+      const off = document.createElement("canvas");
+      off.width = state.outW;
+      off.height = state.outH;
+      renderTo(off);
+      try{
+        const url = off.toDataURL("image/jpeg", state.quality);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "news-image.jpg";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }catch(err){
+        alert("Export failed (likely due to image CORS). Try another image or a CORS-enabled host.");
+        console.error(err);
+      }
+    }
+
+    bind();
+    refreshCatsUI();
+    logoImg.addEventListener("load", resizePreviewCanvas);
+    logoImg.addEventListener("error", ()=> console.warn("Logo failed to load; export will proceed without it."));
+    resizePreviewCanvas();
+  </script>
+</body>
+</html>
