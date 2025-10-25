@@ -25,7 +25,7 @@ const state = {
   padding: 64,
   showDecor: true,
   outW: 1080,
-  outH: 1080,
+  outH: 1350,
   quality: 0.96
 };
 
@@ -48,8 +48,6 @@ const el = {
   overlay: document.getElementById("overlay"),
   padding: document.getElementById("padding"),
   showDecor: document.getElementById("showDecor"),
-  size: document.getElementById("size"),
-  quality: document.getElementById("quality"),
   download: document.getElementById("download"),
   clearBg: document.getElementById("clearBg"),
   reset: document.getElementById("reset"),
@@ -468,12 +466,6 @@ function bind(){
     resizePreviewCanvas(); 
   });
 
-  el.size.addEventListener("change", e=>{
-    const {w,h} = parseSize(e.target.value);
-    state.outW = w; state.outH = h;
-    resizePreviewCanvas();
-  });
-  el.quality.addEventListener("input", e=>{ state.quality = +e.target.value; });
 
   el.download.addEventListener("click", downloadJPG);
   el.clearBg.addEventListener("click", ()=>{
@@ -494,7 +486,7 @@ function bind(){
     state.headlineColor = "#ffffff"; el.headlineColor.value = "#ffffff"; state.align = "center"; el.align.value = "center"; state.uppercase = false; el.uppercase.checked = false;
 
     state.overlay = 52; el.overlay.value = "52"; state.padding = 64; el.padding.value = "64"; state.showDecor = true; el.showDecor.checked = true;
-    state.outW = 1080; state.outH = 1080; el.size.value = "1080x1080"; state.quality = 0.96; el.quality.value = "0.96";
+    state.outW = 1080; state.outH = 1350; state.quality = 0.96;
     state.bgImage = null; el.bgFile.value = "";
     resizePreviewCanvas();
   });
